@@ -19,20 +19,31 @@ ExternalProject_Get_Property(json11_lib binary_dir)
 link_directories(${binary_dir})
 include_directories(${source_dir})
 
-find_package(Protobuf REQUIRED)
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
-find_package(GRPC REQUIRED)
+include(FindPkgConfig)
+pkg_check_modules(PROTOBUF REQUIRED protobuf)
+pkg_check_modules(GRPC REQUIRED grpc++)
+set(GRPC_CPP_PLUGIN "${GRPC_PREFIX}/bin/grpc_cpp_plugin")
 
+add_custom_command(
+  DEPENDS ${CMAKE_SOURCE_DIR}/proto/comm.proto
+  COMMENT "Generating interface files of the proto file (grpc)"
+  OUTPUT ${CMAKE_SOURCE_DIR}/src/comm.grpc.pb.cc ${CMAKE_SOURCE_DIR}/src/comm.grpc.pb.h
+  COMMAND ${PROTOBUF_PREFIX}/bin/protoc
+  ARGS --plugin=protoc-gen-grpc=${GRPC_CPP_PLUGIN} --proto_path=${CMAKE_SOURCE_DIR}/proto --grpc_out="${CMAKE_SOURCE_DIR}/src/" ${CMAKE_SOURCE_DIR}/proto/comm.proto
 
-set(PROTOS ${CMAKE_SOURCE_DIR}/proto/comm.proto)
-set(PROTO_SRC_DIR ${CMAKE_BINARY_DIR}/proto)
-file(MAKE_DIRECTORY ${PROTO_SRC_DIR})
-include_directories(${PROTO_SRC_DIR})
-include_directories(${CMAKE_BINARY_DIR})
+  DEPENDS ${CMAKE_SOURCE_DIR}/proto/comm.proto
+  COMMENT "Generating interface files of the proto file (protobuf)"
+  OUTPUT ${CMAKE_SOURCE_DIR}/src/comm.pb.cc ${CMAKE_SOURCE_DIR}/comm.pb.h
+  COMMAND ${PROTOBUF_PREFIX}/bin/protoc
+  ARGS --cpp_out="${CMAKE_SOURCE_DIR}/src" --proto_path=${CMAKE_SOURCE_DIR}/proto ${CMAKE_SOURCE_DIR}/proto/comm.proto
+)
 
-protobuf_generate_cpp(PROTO_SRCS PROTO_HDRS ${PROTO_SRC_DIR} ${PROTOS})
-grpc_generate_cpp(GRPC_SRCS GRPC_HDRS ${PROTO_SRC_DIR} ${PROTOS})
+add_library(rpc ${CMAKE_SOURCE_DIR}/src/comm.pb.cc ${CMAKE_SOURCE_DIR}/src/comm.grpc.pb.cc)
 
-add_executable(p2p-client client.cpp client/central_server.cpp  ${PROTO_SRCS}  ${GRPC_SRCS})
+add_executable(p2p-server src/server.cpp src/central_server.cpp)
+add_dependencies(p2p-server json11_lib)
+target_link_libraries(p2p-server json11 ${GRPC_STATIC_LDFLAGS} rpc)
+
+add_executable(p2p-client src/client.cpp src/central_server.cpp)
 add_dependencies(p2p-client json11_lib)
-target_link_libraries(p2p-client json11 gRPC::grpc++_reflection protobuf::libprotobuf)
+target_link_libraries(p2p-client json11 ${GRPC_STATIC_LDFLAGS} rpc)
