@@ -1,0 +1,34 @@
+syntax = "proto3";
+
+package p2p;
+
+// The central server service definition
+service central_server {
+  //client request:
+  // - register : register client information to server
+  // - lookup : try to find another client to connect directly to him...
+  rpc client_register(client_information) returns (bool_msg) {}
+  rpc client_lookup(client_id) returns (client_info_response) {}
+}
+
+//generic message
+message bool_msg {
+    bool success = 1;
+}
+
+//generic message
+message client_id {
+    string name = 1;
+}
+
+// The request message containing the user's name.
+message client_information {
+  client_id id = 1;
+  string addr = 2;  // client addr
+  uint32 port = 3;  // client binding port (for p2p connections)
+}
+
+message client_info_response {
+  bool found = 1;
+  client_information data = 2;
+}
