@@ -1,0 +1,33 @@
+language: cpp
+
+os:
+  - macos
+  - linux
+
+dist:
+  - bionic
+
+compiler:
+  - gcc
+  - clang
+
+addons:
+  apt:
+    packages:
+      - libgrpc++-dev
+      - protobuf-compiler-grpc
+
+before_install:
+  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then brew update                 ; fi
+  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then brew install grpc           ; fi
+
+script:
+  - mkdir build && cd build
+  - cmake .. && make
+
+notifications:
+  email:
+    recipients:
+      - ccna.syl@gmail.com
+    on_success: change
+    on_failure: change
