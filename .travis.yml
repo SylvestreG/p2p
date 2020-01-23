@@ -14,13 +14,14 @@ compiler:
 addons:
   apt:
     packages:
-      - libgrpc++-dev
-      - protobuf-compiler-grpc
+      - libzmq3-dev
+      - protobuf-compiler
       - libprotobuf-dev
 
 before_install:
   - if [ "$TRAVIS_OS_NAME" = "osx" ]; then brew update                 ; fi
-  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then brew install grpc           ; fi
+  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then brew install zeromq         ; fi
+  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then brew install protobuf       ; fi
 
 script:
   - mkdir build && cd build

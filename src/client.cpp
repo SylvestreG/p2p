@@ -1,12 +1,12 @@
 #include <iostream>
-#include "central_server.h"
+#include "central.h"
 
 int main() {
-  central_server_client client(grpc::CreateChannel(
-    "localhost:50051", grpc::InsecureChannelCredentials()));
+  central_client client("tcp://localhost:5555");
 
-  if (client.client_register("ponay", "localhost", 4242));
-    std::cout << ("registering done");
-
+  //  Do 10 requests, waiting each time for a response
+  for (int request_nbr = 0; request_nbr != 10; request_nbr++) {
+    client.send("Hello");
+  }
   return 0;
 }
