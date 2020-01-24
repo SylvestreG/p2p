@@ -19,6 +19,14 @@ ExternalProject_Get_Property(json11_lib binary_dir)
 link_directories(${binary_dir})
 include_directories(${source_dir})
 
+# Check is the library is installed on the system
+find_library(ZEROMQ_LIBRARIES NAMES zmq DOC "Path to libzmq)")
+
+find_path(ZEROMQ_INCLUDE_DIR NAMES zmq.hpp DOC "Path to ZeroMQ include header files.")
+
+include_directories(${ZEROMQ_INCLUDE_DIR})
+link_directories(${ZEROMQ_LIBRARIES})
+
 find_package(Protobuf REQUIRED)
 include_directories(${Protobuf_INCLUDE_DIRS})
 include_directories(${CMAKE_CURRENT_BINARY_DIR})

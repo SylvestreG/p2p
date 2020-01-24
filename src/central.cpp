@@ -10,12 +10,13 @@ central_client::central_client(std::string const &addr)
 }
 
 void central_client::send(std::string const &msg) {
-  zmq::message_t request(std::move(msg));
-  _socket.send(std::move(request), zmq::send_flags::none);
+  zmq::message_t request(msg.size());
+  memcpy(request.data(), msg.c_str(), msg.size());
+  _socket.send(request);
 
   //  Get the reply.
   zmq::message_t reply;
-  _socket.recv(reply);
+  _socket.recv(&reply);
 }
 
 central_server::central_server(std::string const &addr)
@@ -29,12 +30,12 @@ void central_server::run() {
     zmq::message_t request;
 
     //  Wait for next request from client
-    _socket.recv(request);
+    _socket.recv(&request);
     std::cout << "Received Hello" << std::endl;;
 
     //  Send reply back to client
     zmq::message_t reply(5);
     memcpy(reply.data(), "World", 5);
-    _socket.send(reply, zmq::send_flags::none);
+    _socket.send(reply);
   }
 }

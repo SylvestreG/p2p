@@ -21,7 +21,6 @@ addons:
 before_install:
   - if [ "$TRAVIS_OS_NAME" = "osx" ]; then brew update                 ; fi
   - if [ "$TRAVIS_OS_NAME" = "osx" ]; then brew install zeromq         ; fi
-  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then brew install protobuf       ; fi
 
 script:
   - mkdir build && cd build

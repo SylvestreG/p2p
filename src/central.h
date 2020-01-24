@@ -9,6 +9,7 @@
 #include <memory>
 #include <string>
 #include <zmq.hpp>
+#include "comm.pb.h"
 
 class central_server {
 private:
