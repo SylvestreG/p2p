@@ -19,8 +19,10 @@ addons:
       - libprotobuf-dev
 
 before_install:
-  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then brew update                 ; fi
-  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then brew install zeromq         ; fi
+  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then brew update                              ; fi
+  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then brew install zeromq                      ; fi
+  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then brew tap jmuncaster/homebrew-header-only ; fi
+  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then brew install cppzmq                      ; fi
 
 script:
   - mkdir build && cd build
