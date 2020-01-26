@@ -20,7 +20,7 @@ message client_generic_response {
 
 message client_lookup_response {
     client_generic_response response = 1;
-    client_information infos = 2;
+    string client_addr = 2;
 }
 
 //generic message
