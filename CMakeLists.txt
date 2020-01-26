@@ -30,7 +30,7 @@ link_directories(${ZEROMQ_LIBRARIES})
 find_package(Protobuf REQUIRED)
 include_directories(${Protobuf_INCLUDE_DIRS})
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
-protobuf_generate_cpp(PROTO_SRCS PROTO_HDRS ${CMAKE_SOURCE_DIR}/proto/comm.proto)
+protobuf_generate_cpp(PROTO_SRCS PROTO_HDRS ${CMAKE_SOURCE_DIR}/proto/central.proto)
 
 add_executable(p2p-server src/central/server.cpp src/central/central.cpp ${PROTO_SRCS} ${PROTO_HDRS})
 add_dependencies(p2p-server json11_lib)

@@ -6,7 +6,7 @@
 #define P2P_CLIENT_CENTRAL_IFACE_H_
 
 #include <zmq.hpp>
-#include "comm.pb.h"
+#include "central.pb.h"
 
 class central_client {
  private:

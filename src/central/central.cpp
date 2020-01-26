@@ -6,7 +6,6 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
-#include "comm.pb.h"
 
 central_server::central_server(std::string const& addr)
   : _context{1}, _socket{_context, ZMQ_REP} {

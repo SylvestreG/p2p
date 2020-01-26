@@ -10,7 +10,7 @@
 #include <string>
 #include <unordered_map>
 #include <zmq.hpp>
-#include "comm.pb.h"
+#include "central.pb.h"
 
 class central_server {
 private:
