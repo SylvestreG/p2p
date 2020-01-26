@@ -1,30 +1,41 @@
 #include "central_client.h"
+#include <iostream>
 
 central_client::central_client(std::string const& address)
-  : _context{1}, _socket{_context, ZMQ_REQ} {
-  _socket.connect(address);
+  : _context{zmq_ctx_new ()}, _socket{zmq_socket(_context, ZMQ_REQ)} {
+  zmq_connect(_socket, address.c_str());
 }
 
+central_client::~central_client() {
+  zmq_close(_socket);
+  zmq_ctx_destroy(_context);
+}
 
-auto encode_send_and_read_response = [](zmq::socket_t &sock, central::central_msg& query, central::central_msg &msg) ->  bool {
+static void my_free (void *data, void *hint)
+{
+  free(data);
+}
+
+auto encode_send_and_read_response = [](void *sock, central::central_msg& query, central::central_msg &msg) ->  bool {
   std::string output;
   //serialize and send it
   if (query.SerializeToString(&output)) {
-
-    zmq::message_t request(output.size());
-    memcpy(request.data(), output.c_str(), output.size());
-    sock.send(request);
+    zmq_msg_t send;
+    zmq_msg_init_size(&send, output.size());
+    memcpy(zmq_msg_data(&send), output.c_str(), output.size());
+    zmq_msg_send(&send, sock, 0);
   } else {
     std::cout << "cannot create client request" << std::endl;
     return false;
   }
 
   //  Get the reply.
-  zmq::message_t reply;
-  sock.recv(&reply);
+  zmq_msg_t reply;
+  zmq_msg_init(&reply);
+  zmq_msg_recv(&reply, sock, 0);
 
   std::string
-    rpl = std::string(static_cast<char *>(reply.data()), reply.size());
+    rpl = std::string(static_cast<char *>(zmq_msg_data(&reply)), zmq_msg_size(&reply));
 
   if (!msg.ParseFromString(rpl)) {
     std::cout << "cannot parse response pb" << std::endl;
@@ -94,8 +105,6 @@ bool central_client::client_lookup(
   return true;
 }
 
-bool central_client::stop_server() {
-  zmq::message_t msg{4};
-  memcpy(msg.data(), "STOP", 4);
-  _socket.send(msg);
+void central_client::stop_server() {
+  zmq_send(_socket, "STOP", 4, 0);
 }

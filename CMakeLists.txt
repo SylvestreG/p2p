@@ -22,7 +22,7 @@ include_directories(${source_dir})
 # Check is the library is installed on the system
 find_library(ZEROMQ_LIBRARIES NAMES zmq DOC "Path to libzmq)")
 
-find_path(ZEROMQ_INCLUDE_DIR NAMES zmq.hpp DOC "Path to ZeroMQ include header files.")
+find_path(ZEROMQ_INCLUDE_DIR NAMES zmq.h DOC "Path to ZeroMQ include header files.")
 
 include_directories(${ZEROMQ_INCLUDE_DIR})
 link_directories(${ZEROMQ_LIBRARIES})
@@ -42,6 +42,4 @@ target_link_libraries(p2p-client json11 ${Protobuf_LIBRARIES} zmq)
 
 
 option(WITH_TESTING "Generate unit tests." OFF)
-if (WITH_TESTING)
-  add_subdirectory(tests)
-endif(WITH_TESTING)
+add_subdirectory(tests)
