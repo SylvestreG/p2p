@@ -3,7 +3,8 @@
 
 central_client::central_client(std::string const& address)
   : _context{zmq_ctx_new ()}, _socket{zmq_socket(_context, ZMQ_REQ)} {
-  zmq_connect(_socket, address.c_str());
+  if (zmq_connect(_socket, address.c_str()))
+    throw std::make_error_code(std::errc::connection_refused);
 }
 
 central_client::~central_client() {
@@ -23,7 +24,10 @@ auto encode_send_and_read_response = [](void *sock, central::central_msg& query,
     zmq_msg_t send;
     zmq_msg_init_size(&send, output.size());
     memcpy(zmq_msg_data(&send), output.c_str(), output.size());
-    zmq_msg_send(&send, sock, 0);
+    if (!zmq_msg_send(&send, sock, 0)) {
+      std::cout << strerror(errno) << std::endl;
+      throw std::make_error_code(std::errc::not_connected);
+    }
   } else {
     std::cout << "cannot create client request" << std::endl;
     return false;
