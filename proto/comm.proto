@@ -1,27 +1,26 @@
 syntax = "proto3";
 
-package p2p;
+package central;
 
-message p2pserver {
+message central_msg {
     oneof commands {
         client_information cl_register = 1;
-        client_id cl_lookup = 2;
+        client_generic_response cl_register_rply = 2;
 
-        client_response response = 10;
-    }
-}
-
-message client_response {
-    oneof data {
-        bool response_ok = 1;
-
-        client_information client_info = 10;
+        client_id cl_lookup = 11;
+        client_lookup_response cl_lookup_rply = 12;
     }
 }
 
 //generic message
-message bool_msg {
+message client_generic_response {
     bool success = 1;
+    string error_message = 2;
+}
+
+message client_lookup_response {
+    client_generic_response response = 1;
+    client_information infos = 2;
 }
 
 //generic message
@@ -32,6 +31,5 @@ message client_id {
 // The request message containing the user's name.
 message client_information {
   client_id id = 1;
-  string addr = 2;  // client addr
   uint32 port = 3;  // client binding port (for p2p connections)
 }

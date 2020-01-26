@@ -1,14 +1,13 @@
 #include <iostream>
 #include "central.h"
 
-int main() {
+int main(int ac, char **av) {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
 
-  central_client client("tcp://localhost:5555");
+  central_client client("tcp://127.0.0.1:5555");
 
-  //  Do 10 requests, waiting each time for a response
-  for (int request_nbr = 0; request_nbr != 10; request_nbr++) {
-    client.send("Hello");
+  if (!client.client_register("test", 3131)) {
+    std::cout << "cannot register client" << std::endl;
   }
 
   google::protobuf::ShutdownProtobufLibrary();

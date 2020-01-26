@@ -8,6 +8,7 @@
 #include <iostream>
 #include <memory>
 #include <string>
+#include <unordered_map>
 #include <zmq.hpp>
 #include "comm.pb.h"
 
@@ -15,6 +16,10 @@ class central_server {
 private:
   zmq::context_t _context;
   zmq::socket_t _socket;
+
+  std::unordered_map<std::string, std::string> _client_map; //name -> addr
+
+  zmq::message_t _handle_client_register(central::client_information const& infos, std::string const& peer);
 
 public:
   central_server() = delete;
@@ -32,5 +37,8 @@ class central_client {
   central_client() = delete;
   central_client(std::string const& addr);
   void send(std::string const& msg);
+
+  bool client_register(std::string const& name, uint32_t port);
+  bool client_lookup(std::string const& name, std::string& addr, uint32_t& port);
 };
 #endif // P2P_CLIENT_CENTRAL_IFACE_H_
