@@ -32,10 +32,10 @@ include_directories(${Protobuf_INCLUDE_DIRS})
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 protobuf_generate_cpp(PROTO_SRCS PROTO_HDRS ${CMAKE_SOURCE_DIR}/proto/comm.proto)
 
-add_executable(p2p-server src/server.cpp src/central.cpp ${PROTO_SRCS} ${PROTO_HDRS})
+add_executable(p2p-server src/central/server.cpp src/central/central.cpp ${PROTO_SRCS} ${PROTO_HDRS})
 add_dependencies(p2p-server json11_lib)
 target_link_libraries(p2p-server json11 ${Protobuf_LIBRARIES} zmq)
 
-add_executable(p2p-client src/client.cpp src/central.cpp ${PROTO_SRCS} ${PROTO_HDRS})
+add_executable(p2p-client src/client/client.cpp src/client/central_client.cpp ${PROTO_SRCS} ${PROTO_HDRS})
 add_dependencies(p2p-client json11_lib)
 target_link_libraries(p2p-client json11 ${Protobuf_LIBRARIES} zmq)

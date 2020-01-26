@@ -1,5 +1,5 @@
 #include <iostream>
-#include "central.h"
+#include "central_client.h"
 
 int main(int ac, char **av) {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
