@@ -6,11 +6,12 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <sstream>
 
 central_server::central_server(std::string const& addr)
   : _context{1}, _socket{_context, ZMQ_REP} {
   //  Prepare our context and socket
-  _socket.bind("tcp://*:5555");
+  _socket.bind(addr);
 }
 
 auto handle_response = [](std::string &err, auto& response, auto& msg) -> zmq::message_t {
@@ -91,6 +92,9 @@ void central_server::run() {
     central::central_msg query;
 
     if (!query.ParseFromString(rpl)) {
+      if (rpl == "STOP")
+        return ;
+
       std::cout << "cannot decode pb" << std::endl;
       continue;
     }
@@ -99,8 +103,7 @@ void central_server::run() {
     switch (query.commands_case()) {
       case central::central_msg::kClRegister:
         reply = _handle_client_register(query.cl_register(),
-                                request.gets(
-                                  "Peer-Address"));
+                                zmq_msg_gets(request.handle(), "Peer-Address"));
         break;
 
       case central::central_msg::kClLookup:

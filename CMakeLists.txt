@@ -39,3 +39,9 @@ target_link_libraries(p2p-server json11 ${Protobuf_LIBRARIES} zmq)
 add_executable(p2p-client src/client/client.cpp src/client/central_client.cpp ${PROTO_SRCS} ${PROTO_HDRS})
 add_dependencies(p2p-client json11_lib)
 target_link_libraries(p2p-client json11 ${Protobuf_LIBRARIES} zmq)
+
+
+option(WITH_TESTING "Generate unit tests." OFF)
+if (WITH_TESTING)
+  add_subdirectory(tests)
+endif(WITH_TESTING)

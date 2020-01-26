@@ -93,3 +93,9 @@ bool central_client::client_lookup(
   addr = msg.cl_lookup_rply().client_addr();
   return true;
 }
+
+bool central_client::stop_server() {
+  zmq::message_t msg{4};
+  memcpy(msg.data(), "STOP", 4);
+  _socket.send(msg);
+}
