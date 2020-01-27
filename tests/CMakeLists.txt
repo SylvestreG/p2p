@@ -15,5 +15,5 @@ add_definitions(-DTEST_DIR="${CMAKE_SOURCE_DIR}/tests/")
 protobuf_generate_cpp(PROTO_SRCS PROTO_HDRS ${CMAKE_SOURCE_DIR}/proto/central.proto)
 
 add_executable(ut main.cpp central.cpp ../src/client/central_client.cpp ../src/central/central.cpp ${PROTO_SRCS})
-add_dependencies(ut googletest p2p-server)
+add_dependencies(ut googletest central)
 target_link_libraries(ut gtest pthread zmq ${Protobuf_LIBRARIES})

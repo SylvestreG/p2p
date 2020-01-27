@@ -1,10 +1,10 @@
 #include <atomic>
 #include <iostream>
 #include <memory>
-#include <random>
 #include <replxx.hxx>
 #include <sstream>
 #include <thread>
+#include <lyra/lyra.hpp>
 #include "central_client.h"
 #include "cli.h"
 #include "cli_cmd.h"
@@ -29,9 +29,15 @@ static auto send_stop = [](uint32_t port) {
 
   zmq_connect(socket, get_addr(port, true).c_str());
 
+  p2p::p2p_msg req;
+  req.set_exit(true);
+
+  std::string buf;
+  req.SerializeToString(&buf);
+
   zmq_msg_t msg;
-  zmq_msg_init_size(&msg, 4);
-  memcpy(zmq_msg_data(&msg), "STOP", 4);
+  zmq_msg_init_size(&msg, buf.size());
+  memcpy(zmq_msg_data(&msg), buf.c_str(), buf.size());
   zmq_msg_send(&msg, socket, 0);
 
   zmq_close(socket);
@@ -42,9 +48,7 @@ void p2p_bind(std::atomic_bool &init_done, cli &shell, uint32_t &port) {
   void *ctx = zmq_ctx_new();
   void *socket = zmq_socket(ctx, ZMQ_REP);
 
-  while (zmq_bind(socket, get_addr(port).c_str())) {
-    port++;
-  }
+  zmq_bind(socket, get_addr(port).c_str());
 
   bool should_exit{false};
 
@@ -101,20 +105,33 @@ void p2p_bind(std::atomic_bool &init_done, cli &shell, uint32_t &port) {
 
 int main(int ac, char **av) {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
+  std::string name;
+  std::string central;
+  uint32_t port{0};
 
-  std::string name{"test"};
+  auto arg = lyra::cli_parser() |
+    lyra::opt(name, "name")["-n"]["--name"]("p2p name") |
+    lyra::opt(port, "port")["-p"]["--port"]("p2p port") |
+    lyra::opt(central, "central")["-c"]["--central"]("central addr");
+
+  auto result = arg.parse({ac, av});
+  if (!result) {
+    std::cerr <<  "error: " << result.errorMessage()
+              << std::endl;
+    std::cerr << "usage: ./p2p -n name -p local_binding_port -c tcp://centraladdr:central_port" << std::endl;
+    return EXIT_FAILURE;
+  }
+
+  if (central.empty() || port == 0 || name.empty()) {
+    std::cerr << "usage: ./p2p -n name -p local_binding_port -c tcp://centraladdr:central_port" << std::endl;
+    return EXIT_FAILURE;
+  }
 
   std::atomic_bool init_done{false};
-  // find a port
-  std::random_device
-      rd; // Will be used to obtain a seed for the random number engine
-  std::mt19937 gen(rd()); // Standard mersenne_twister_engine seeded with rd()
-  std::uniform_int_distribution<> dis(4200, 4300);
-  uint32_t port = dis(gen);
 
   std::shared_ptr<central_client> client;
   try {
-    client = std::make_shared<central_client>("tcp://127.0.0.1:5555");
+    client = std::make_shared<central_client>(central);
   } catch (std::error_code const &ec) {
     std::cerr << "\x1b[1;32merror\x1b[0m"
               << ": cannot access to central" << std::endl;

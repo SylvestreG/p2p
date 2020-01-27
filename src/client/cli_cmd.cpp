@@ -33,7 +33,7 @@ void p2p_send_msg(std::shared_ptr<central_client> client, std::string const& nam
       input.size() - data_pos)}; //  for space after addr and \n
 
   std::string addr;
-  if (p2p_proxy.find(cl_name) == p2p_proxy.end()) {
+  if (p2p_proxy.find(cl_name) == p2p_proxy.end() && cl_name != name) {
     std::cout << "unknown p2p client : '" << cl_name << "' asking central" << std::endl;
     if (!client->client_lookup(cl_name, addr)) {
       std::cout << "error no '" << cl_name << "' registred" << std::endl;
@@ -47,6 +47,11 @@ void p2p_send_msg(std::shared_ptr<central_client> client, std::string const& nam
   void *sock = zmq_socket(ctx, ZMQ_REQ);
 
   zmq_connect(sock, p2p_proxy[cl_name].c_str());
+
+  if (cl_name == name) {
+    std::cout << "send to myself: " << data << std::endl;
+    return ;
+  }
 
   p2p::p2p_msg req;
   p2p::msg_query *mq = new p2p::msg_query;

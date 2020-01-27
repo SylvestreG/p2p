@@ -5,6 +5,16 @@ set(CMAKE_CXX_STANDARD 17)
 
 include(ExternalProject)
 
+ExternalProject_Add(lyra-lib
+  GIT_REPOSITORY https://github.com/bfgroup/lyra
+  TIMEOUT 10
+  INSTALL_COMMAND ""
+  LOG_DOWNLOAD ON
+  LOG_CONFIGURE ON
+  LOG_BUILD ON)
+ExternalProject_Get_Property(lyra-lib source_dir)
+include_directories(${source_dir}/include/)
+
 ExternalProject_Add(replxx_lib
   GIT_REPOSITORY https://github.com/AmokHuginnsson/replxx
   TIMEOUT 10
@@ -34,12 +44,13 @@ include_directories(${CMAKE_CURRENT_BINARY_DIR})
 protobuf_generate_cpp(CENTRAL_SRCS CENTRAL_HDRS ${CMAKE_SOURCE_DIR}/proto/central.proto)
 protobuf_generate_cpp(P2P_SRCS P2P_HDRS ${CMAKE_SOURCE_DIR}/proto/p2p.proto)
 
-add_executable(p2p-server src/central/server.cpp src/central/central.cpp ${CENTRAL_SRCS} ${CENTRAL_HDRS})
-target_link_libraries(p2p-server ${Protobuf_LIBRARIES} zmq)
+add_executable(central src/central/main.cpp src/central/central.cpp ${CENTRAL_SRCS} ${CENTRAL_HDRS})
+add_dependencies(central lyra-lib)
+target_link_libraries(central ${Protobuf_LIBRARIES} zmq)
 
-add_executable(p2p-client src/client/client.cpp src/client/central_client.cpp src/client/cli.cpp src/client/cli_cmd.cpp  src/client/utils.cpp ${CENTRAL_SRCS} ${CENTRAL_HDRS} ${P2P_SRCS} ${P2O_HDRS})
-add_dependencies(p2p-client replxx_lib)
-target_link_libraries(p2p-client replxx ${Protobuf_LIBRARIES} zmq)
+add_executable(p2p src/client/main.cpp src/client/central_client.cpp src/client/cli.cpp src/client/cli_cmd.cpp src/client/utils.cpp ${CENTRAL_SRCS} ${CENTRAL_HDRS} ${P2P_SRCS} ${P2O_HDRS})
+add_dependencies(p2p replxx_lib lyra-lib)
+target_link_libraries(p2p replxx ${Protobuf_LIBRARIES} zmq)
 
 
 option(WITH_TESTING "Generate unit tests." OFF)

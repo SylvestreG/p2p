@@ -92,7 +92,8 @@ static auto hook_completion =
 };
 
 void cli::write_msg(std::string const& src, std::string const& msg) {
-  std::cout << src << " send us: " << msg << std::endl;
+  std::cout << std::endl << src << " send us: " << msg << std::endl;
+  std::cout << _prompt << std::flush;
 }
 
 void cli::add_command(
