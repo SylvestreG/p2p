@@ -31,12 +31,13 @@ link_directories(${ZEROMQ_LIBRARIES})
 find_package(Protobuf REQUIRED)
 include_directories(${Protobuf_INCLUDE_DIRS})
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
-protobuf_generate_cpp(PROTO_SRCS PROTO_HDRS ${CMAKE_SOURCE_DIR}/proto/central.proto)
+protobuf_generate_cpp(CENTRAL_SRCS CENTRAL_HDRS ${CMAKE_SOURCE_DIR}/proto/central.proto)
+protobuf_generate_cpp(P2P_SRCS P2P_HDRS ${CMAKE_SOURCE_DIR}/proto/p2p.proto)
 
-add_executable(p2p-server src/central/server.cpp src/central/central.cpp ${PROTO_SRCS} ${PROTO_HDRS})
+add_executable(p2p-server src/central/server.cpp src/central/central.cpp ${CENTRAL_SRCS} ${CENTRAL_HDRS})
 target_link_libraries(p2p-server ${Protobuf_LIBRARIES} zmq)
 
-add_executable(p2p-client src/client/client.cpp src/client/central_client.cpp src/client/cli.cpp src/client/cli_cmd.cpp  src/client/utils.cpp ${PROTO_SRCS} ${PROTO_HDRS})
+add_executable(p2p-client src/client/client.cpp src/client/central_client.cpp src/client/cli.cpp src/client/cli_cmd.cpp  src/client/utils.cpp ${CENTRAL_SRCS} ${CENTRAL_HDRS} ${P2P_SRCS} ${P2O_HDRS})
 add_dependencies(p2p-client replxx_lib)
 target_link_libraries(p2p-client replxx ${Protobuf_LIBRARIES} zmq)
 

@@ -91,8 +91,8 @@ static auto hook_completion =
   return completions;
 };
 
-void cli::write_msg(std::string const& msg) {
-  _rx.emulate_key_press(13);
+void cli::write_msg(std::string const& src, std::string const& msg) {
+  std::cout << src << " send us: " << msg << std::endl;
 }
 
 void cli::add_command(

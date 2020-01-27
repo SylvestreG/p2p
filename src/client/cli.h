@@ -28,7 +28,7 @@ class cli {
   cli();
   ~cli();
 
-  void write_msg(std::string const& msg);
+  void write_msg(std::string const& src, std::string const& msg);
   void add_command(std::string const& command_name, std::function<void (replxx::Replxx &_rx, std::string const& input)> fn);
   void run();
 };

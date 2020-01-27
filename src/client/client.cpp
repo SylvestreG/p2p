@@ -1,6 +1,3 @@
-#include "central_client.h"
-#include "cli.h"
-#include "cli_cmd.h"
 #include <atomic>
 #include <iostream>
 #include <memory>
@@ -8,6 +5,10 @@
 #include <replxx.hxx>
 #include <sstream>
 #include <thread>
+#include "central_client.h"
+#include "cli.h"
+#include "cli_cmd.h"
+#include "p2p.pb.h"
 
 using Replxx = replxx::Replxx;
 
@@ -45,6 +46,8 @@ void p2p_bind(std::atomic_bool &init_done, cli &shell, uint32_t &port) {
     port++;
   }
 
+  bool should_exit{false};
+
   while (true) {
     zmq_msg_t request;
     zmq_msg_init(&request);
@@ -53,14 +56,43 @@ void p2p_bind(std::atomic_bool &init_done, cli &shell, uint32_t &port) {
     //  Wait for next request from client
     zmq_msg_recv(&request, socket, 0);
     std::string rpl = std::string(static_cast<char *>(zmq_msg_data(&request)),
-                                  zmq_msg_size(&request));
+                                    zmq_msg_size(&request));
+
+
+    p2p::p2p_msg msg;
+    if (msg.ParseFromString(rpl)) {
+      switch (msg.commands_case()) {
+        case p2p::p2p_msg::kMsg:
+          shell.write_msg(msg.msg().name(), msg.msg().data());
+          break;
+        case p2p::p2p_msg::kExit:
+          should_exit = true;
+          break;
+        default:
+          std::cout << "error: not supported request" << std::endl;
+          break;
+      }
+    } else {
+      std::cout << "error: bad pb" << std::endl;
+    }
+
     if (rpl == "STOP") {
       break;
     }
 
-    rpl.append("\n\0");
-    printf("%s", rpl.c_str());
-    shell.write_msg(rpl);
+    p2p::p2p_msg r;
+
+    r.set_exit(true);
+    std::string buffer;
+    if (r.SerializeToString(&buffer)) {
+      zmq_msg_t reply;
+      zmq_msg_init_size(&reply, buffer.size());
+      memcpy(zmq_msg_data(&reply), buffer.c_str(), buffer.size());
+      zmq_msg_send(&reply, socket, 0);
+    }
+
+    if (should_exit)
+      break;
   }
 
   zmq_close(socket);
@@ -69,6 +101,8 @@ void p2p_bind(std::atomic_bool &init_done, cli &shell, uint32_t &port) {
 
 int main(int ac, char **av) {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
+
+  std::string name{"test"};
 
   std::atomic_bool init_done{false};
   // find a port
@@ -95,7 +129,7 @@ int main(int ac, char **av) {
   while (!init_done)
     std::this_thread::sleep_for(std::chrono::milliseconds{5});
 
-  if (!client->client_register("test", port)) {
+  if (!client->client_register(name, port)) {
     send_stop(port);
     msg_thread.join();
     std::cout << "\x1b[1;32merror\x1b[0m cannot register client" << std::endl;
@@ -106,12 +140,12 @@ int main(int ac, char **av) {
   shell.add_command("history", history);
   shell.add_command("help", help);
   shell.add_command("send",
-                    std::bind(p2p_send_msg, client, std::placeholders::_1,
+                    std::bind(p2p_send_msg, client, name, std::placeholders::_1,
                               std::placeholders::_2));
 
   shell.run();
 
-  client->client_unregister("test");
+  client->client_unregister(name);
   send_stop(port);
   msg_thread.join();
 

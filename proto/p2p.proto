@@ -1,3 +1,16 @@
 syntax = "proto3";
 
-package central;
+package p2p;
+
+message p2p_msg {
+    oneof commands {
+        msg_query msg = 1;
+        bool response = 2;
+        bool exit = 3;
+    }
+}
+
+message msg_query {
+    string name = 1;
+    string data = 2;
+}
