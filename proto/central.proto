@@ -9,6 +9,9 @@ message central_msg {
 
         client_id cl_lookup = 11;
         client_lookup_response cl_lookup_rply = 12;
+
+        client_id cl_unregister = 21;
+        client_generic_response cl_unregister_rply = 22;
     }
 }
 

@@ -36,7 +36,7 @@ protobuf_generate_cpp(PROTO_SRCS PROTO_HDRS ${CMAKE_SOURCE_DIR}/proto/central.pr
 add_executable(p2p-server src/central/server.cpp src/central/central.cpp ${PROTO_SRCS} ${PROTO_HDRS})
 target_link_libraries(p2p-server ${Protobuf_LIBRARIES} zmq)
 
-add_executable(p2p-client src/client/client.cpp src/client/central_client.cpp src/client/cli.cpp ${PROTO_SRCS} ${PROTO_HDRS})
+add_executable(p2p-client src/client/client.cpp src/client/central_client.cpp src/client/cli.cpp src/client/cli_cmd.cpp  src/client/utils.cpp ${PROTO_SRCS} ${PROTO_HDRS})
 add_dependencies(p2p-client replxx_lib)
 target_link_libraries(p2p-client replxx ${Protobuf_LIBRARIES} zmq)
 

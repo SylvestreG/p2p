@@ -68,7 +68,7 @@ zmq_msg_t central_server::_handle_client_register(
 
 zmq_msg_t central_server::_handle_client_lookup(central::client_id const& id) {
   std::string const& name{id.name()};
-  std::cout << "looking for " << name << " ";
+  std::cout << "looking for " << name << " : ";
 
   central::central_msg msg;
   central::client_generic_response *generic = new central::client_generic_response;
@@ -83,6 +83,23 @@ zmq_msg_t central_server::_handle_client_lookup(central::client_id const& id) {
     response->set_client_addr(_client_map[name]);
 
   return handle_response(err, generic, msg);
+}
+
+zmq_msg_t central_server::_handle_client_unregister(central::client_id const& id) {
+  std::string const& name{id.name()};
+  std::cout << "unregister " << name << " : ";
+
+  central::central_msg msg;
+  central::client_generic_response *response = new central::client_generic_response;
+  msg.set_allocated_cl_unregister_rply(response);
+
+  std::string err;
+  if (_client_map.find(name) == _client_map.end())
+    err = "unknwon client";
+  else
+    _client_map.erase(name);
+
+  return handle_response(err, response, msg);
 }
 
 
@@ -115,6 +132,10 @@ void central_server::run() {
 
       case central::central_msg::kClLookup:
         reply = _handle_client_lookup(query.cl_lookup());
+        break;
+
+      case central::central_msg::kClUnregister:
+        reply = _handle_client_unregister(query.cl_unregister());
         break;
 
       default:

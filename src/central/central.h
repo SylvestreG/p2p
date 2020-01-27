@@ -21,6 +21,7 @@ private:
 
   zmq_msg_t _handle_client_register(central::client_information const& infos, std::string const& peer);
   zmq_msg_t _handle_client_lookup(central::client_id const& id);
+  zmq_msg_t _handle_client_unregister(central::client_id const& id);
 
 public:
   central_server() = delete;

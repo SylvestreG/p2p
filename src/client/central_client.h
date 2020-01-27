@@ -20,6 +20,7 @@ class central_client {
 
   bool client_register(std::string const& name, uint32_t port);
   bool client_lookup(std::string const& name, std::string& addr);
+  bool client_unregister(std::string const& name);
   void stop_server(void);
 };
 

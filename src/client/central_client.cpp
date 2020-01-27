@@ -24,10 +24,7 @@ auto encode_send_and_read_response = [](void *sock, central::central_msg& query,
     zmq_msg_t send;
     zmq_msg_init_size(&send, output.size());
     memcpy(zmq_msg_data(&send), output.c_str(), output.size());
-    if (!zmq_msg_send(&send, sock, 0)) {
-      std::cout << strerror(errno) << std::endl;
-      throw std::make_error_code(std::errc::not_connected);
-    }
+    zmq_msg_send(&send, sock, 0);
   } else {
     std::cout << "cannot create client request" << std::endl;
     return false;
@@ -106,6 +103,31 @@ bool central_client::client_lookup(
   }
 
   addr = msg.cl_lookup_rply().client_addr();
+  return true;
+}
+
+bool central_client::client_unregister(std::string const& name) {
+  central::central_msg query;
+  central::client_id *id = new central::client_id;
+
+  id->set_name(name);
+  query.set_allocated_cl_unregister(id);
+
+  central::central_msg msg;
+
+  if (!encode_send_and_read_response(_socket, query, msg))
+    return false;
+  if(msg.commands_case() != central::central_msg::kClUnregisterRply) {
+    std::cout << "server does not reply a response pb" << std::endl;
+    return false;
+  }
+
+  if (!msg.cl_unregister_rply().success()) {
+    std::cout << "server error on register: "
+              << msg.cl_unregister_rply().error_message() << std::endl;
+    return false;
+  }
+
   return true;
 }
 
