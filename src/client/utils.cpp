@@ -2,8 +2,8 @@
 // Created by syl on 1/27/20.
 //
 
-#include <algorithm>
 #include "utils.h"
+#include <algorithm>
 
 std::vector<std::string> split(std::string const &str) {
   std::vector<std::string> retval;

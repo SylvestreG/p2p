@@ -11,10 +11,10 @@
 #include <vector>
 
 class cli {
- public:
+public:
   typedef void (*command_fn)();
 
- private:
+private:
   replxx::Replxx _rx;
   std::string _history_file;
   std::string _prompt;
@@ -22,15 +22,19 @@ class cli {
   std::vector<std::string> _msgs;
 
   std::vector<std::string> _keywords;
-  std::unordered_map<std::string, std::function<void (replxx::Replxx &_rx, std::string const& input)>> _commands;
+  std::unordered_map<std::string, std::function<void(replxx::Replxx &_rx,
+                                                     std::string const &input)>>
+      _commands;
 
- public:
+public:
   cli();
   ~cli();
 
-  void write_msg(std::string const& src, std::string const& msg);
-  void add_command(std::string const& command_name, std::function<void (replxx::Replxx &_rx, std::string const& input)> fn);
+  void write_msg(std::string const &src, std::string const &msg);
+  void add_command(
+      std::string const &command_name,
+      std::function<void(replxx::Replxx &_rx, std::string const &input)> fn);
   void run();
 };
 
-#endif //P2P_SRC_CLIENT_CLI_H_
+#endif // P2P_SRC_CLIENT_CLI_H_

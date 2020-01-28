@@ -22,8 +22,7 @@ zmq_helper::~zmq_helper() {
   zmq_ctx_destroy(_context);
 }
 
-void
-zmq_helper::send(std::string const& data) {
+void zmq_helper::send(std::string const &data) {
   zmq_msg_t msg;
   zmq_msg_init_size(&msg, data.length());
   memcpy(zmq_msg_data(&msg), data.c_str(), data.length());
@@ -31,21 +30,21 @@ zmq_helper::send(std::string const& data) {
   zmq_msg_close(&msg);
 }
 
-void
-zmq_helper::recv(std::string & data) {
+void zmq_helper::recv(std::string &data) {
   zmq_msg_t msg;
   zmq_msg_init(&msg);
   zmq_msg_recv(&msg, _socket, 0);
-  data = std::string(static_cast<char *>(zmq_msg_data(&msg)), zmq_msg_size(&msg));
+  data =
+      std::string(static_cast<char *>(zmq_msg_data(&msg)), zmq_msg_size(&msg));
   zmq_msg_close(&msg);
 }
 
-void
-zmq_helper::recv_and_get_peer(std::string & data, std::string &peer) {
+void zmq_helper::recv_and_get_peer(std::string &data, std::string &peer) {
   zmq_msg_t msg;
   zmq_msg_init(&msg);
   zmq_msg_recv(&msg, _socket, 0);
-  data = std::string(static_cast<char *>(zmq_msg_data(&msg)), zmq_msg_size(&msg));
+  data =
+      std::string(static_cast<char *>(zmq_msg_data(&msg)), zmq_msg_size(&msg));
   peer = zmq_msg_gets(&msg, "Peer-Address");
   zmq_msg_close(&msg);
 }

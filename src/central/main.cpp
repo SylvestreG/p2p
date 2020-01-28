@@ -10,8 +10,8 @@ int main(int ac, char **av) {
 
   logger = spdlog::stdout_color_mt("global");
 
-  auto arg = lyra::cli_parser() |
-    lyra::opt(port, "port")["-p"]["--port"]("port");
+  auto arg =
+      lyra::cli_parser() | lyra::opt(port, "port")["-p"]["--port"]("port");
 
   auto result = arg.parse({ac, av});
   if (!result) {

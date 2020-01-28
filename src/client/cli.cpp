@@ -94,7 +94,7 @@ static auto hook_completion =
   return completions;
 };
 
-void cli::write_msg(std::string const& src, std::string const& msg) {
+void cli::write_msg(std::string const &src, std::string const &msg) {
   logger->info("\n{0} send us : {1}", src, msg);
   std::cout << _prompt << std::flush;
 }
