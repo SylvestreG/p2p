@@ -9,19 +9,18 @@
 #include <memory>
 #include <string>
 #include <unordered_map>
-#include <zmq.h>
 #include "central.pb.h"
+#include "../zmq_helper.h"
 
 class central_server {
 private:
-  void *_context;
-  void *_socket;
+  zmq_helper _zmq;
 
   std::unordered_map<std::string, std::string> _client_map; //name -> addr
 
-  zmq_msg_t _handle_client_register(central::client_information const& infos, std::string const& peer);
-  zmq_msg_t _handle_client_lookup(central::client_id const& id);
-  zmq_msg_t _handle_client_unregister(central::client_id const& id);
+  std::string _handle_client_register(central::client_information const& infos, std::string const& peer);
+  std::string _handle_client_lookup(central::client_id const& id);
+  std::string _handle_client_unregister(central::client_id const& id);
 
 public:
   central_server() = delete;

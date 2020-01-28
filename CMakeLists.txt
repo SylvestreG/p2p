@@ -44,11 +44,23 @@ include_directories(${CMAKE_CURRENT_BINARY_DIR})
 protobuf_generate_cpp(CENTRAL_SRCS CENTRAL_HDRS ${CMAKE_SOURCE_DIR}/proto/central.proto)
 protobuf_generate_cpp(P2P_SRCS P2P_HDRS ${CMAKE_SOURCE_DIR}/proto/p2p.proto)
 
-add_executable(central src/central/main.cpp src/central/central.cpp ${CENTRAL_SRCS} ${CENTRAL_HDRS})
+add_executable(central  src/central/central.cpp
+                        src/central/main.cpp
+                        src/zmq_helper.cpp
+                        ${CENTRAL_SRCS} ${CENTRAL_HDRS})
 add_dependencies(central lyra-lib)
 target_link_libraries(central ${Protobuf_LIBRARIES} zmq)
 
-add_executable(p2p src/client/main.cpp src/client/central_client.cpp src/client/cli.cpp src/client/cli_cmd.cpp src/client/utils.cpp ${CENTRAL_SRCS} ${CENTRAL_HDRS} ${P2P_SRCS} ${P2O_HDRS})
+add_executable(p2p      src/client/main.cpp
+                        src/client/central_client.cpp
+                        src/client/cli.cpp
+                        src/client/cli_cmd.cpp
+                        src/client/utils.cpp
+                        src/zmq_helper.cpp
+                        ${CENTRAL_SRCS}
+                        ${CENTRAL_HDRS}
+                        ${P2P_SRCS}
+                        ${P2O_HDRS})
 add_dependencies(p2p replxx_lib lyra-lib)
 target_link_libraries(p2p replxx ${Protobuf_LIBRARIES} zmq)
 

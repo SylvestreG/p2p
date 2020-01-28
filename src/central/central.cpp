@@ -9,17 +9,13 @@
 #include <sstream>
 
 central_server::central_server(std::string const& addr)
-  : _context{zmq_ctx_new()}, _socket{zmq_socket(_context, ZMQ_REP)} {
-  //  Prepare our context and socket
-  zmq_bind(_socket, addr.c_str());
+  : _zmq{addr, zmq_helper::replier} {
 }
 
 central_server::~central_server() {
-  zmq_close(_socket);
-  zmq_ctx_destroy(_context);
 }
 
-auto handle_response = [](std::string &err, auto& response, auto& msg) -> zmq_msg_t {
+auto handle_response = [](std::string &err, auto& response, auto& msg) -> std::string {
   if (err.empty()) {
     response->set_success(true);
     std::cout << "success" << std::endl;
@@ -32,13 +28,10 @@ auto handle_response = [](std::string &err, auto& response, auto& msg) -> zmq_ms
   std::string buffer;
   msg.SerializeToString(&buffer);
 
-  zmq_msg_t reply;
-  zmq_msg_init_size(&reply, buffer.size());
-  memcpy(zmq_msg_data(&reply), buffer.c_str(), buffer.size());
-  return reply;
+  return buffer;
 };
 
-zmq_msg_t central_server::_handle_client_register(
+std::string central_server::_handle_client_register(
   central::client_information const& infos,
   std::string const& peer) {
   std::string const& client{infos.id().name()};
@@ -66,7 +59,7 @@ zmq_msg_t central_server::_handle_client_register(
   return handle_response(err, response, msg);
 }
 
-zmq_msg_t central_server::_handle_client_lookup(central::client_id const& id) {
+std::string central_server::_handle_client_lookup(central::client_id const& id) {
   std::string const& name{id.name()};
   std::cout << "looking for " << name << " : ";
 
@@ -85,7 +78,7 @@ zmq_msg_t central_server::_handle_client_lookup(central::client_id const& id) {
   return handle_response(err, generic, msg);
 }
 
-zmq_msg_t central_server::_handle_client_unregister(central::client_id const& id) {
+std::string central_server::_handle_client_unregister(central::client_id const& id) {
   std::string const& name{id.name()};
   std::cout << "unregister " << name << " : ";
 
@@ -105,29 +98,25 @@ zmq_msg_t central_server::_handle_client_unregister(central::client_id const& id
 
 void central_server::run() {
   while (true) {
-    zmq_msg_t request;
-    zmq_msg_init(&request);
-
+    std::string req;
+    std::string peer;
     //  Wait for next request from client
-    zmq_msg_recv(&request, _socket, 0);
-    std::string
-      rpl = std::string(static_cast<char *>(zmq_msg_data(&request)), zmq_msg_size(&request));
+    _zmq.recv_and_get_peer(req, peer);
 
     central::central_msg query;
 
-    if (!query.ParseFromString(rpl)) {
-      if (rpl == "STOP")
+    if (!query.ParseFromString(req)) {
+      if (req == "STOP")
         return ;
 
       std::cout << "cannot decode pb" << std::endl;
       continue;
     }
 
-    zmq_msg_t reply;
+    std::string reply;
     switch (query.commands_case()) {
       case central::central_msg::kClRegister:
-        reply = _handle_client_register(query.cl_register(),
-                                zmq_msg_gets(&request, "Peer-Address"));
+        reply = _handle_client_register(query.cl_register(), peer);
         break;
 
       case central::central_msg::kClLookup:
@@ -144,6 +133,6 @@ void central_server::run() {
     }
 
     //  Send reply back to client
-    zmq_msg_send(&reply, _socket, 0);
+    _zmq.send(reply);
   }
 }

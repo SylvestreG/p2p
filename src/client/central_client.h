@@ -5,13 +5,12 @@
 #ifndef P2P_CLIENT_CENTRAL_IFACE_H_
 #define P2P_CLIENT_CENTRAL_IFACE_H_
 
-#include <zmq.h>
+#include "../zmq_helper.h"
 #include "central.pb.h"
 
 class central_client {
  private:
-  void *_context;
-  void *_socket;
+  zmq_helper _zmq;
 
  public:
   central_client() = delete;

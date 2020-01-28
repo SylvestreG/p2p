@@ -2,13 +2,13 @@
 #include <iostream>
 #include <memory>
 #include <replxx.hxx>
-#include <sstream>
 #include <thread>
 #include <lyra/lyra.hpp>
 #include "central_client.h"
 #include "cli.h"
 #include "cli_cmd.h"
 #include "p2p.pb.h"
+#include "../zmq_helper.h"
 
 using Replxx = replxx::Replxx;
 
@@ -24,47 +24,33 @@ static auto get_addr = [](uint32_t port, bool client = false) -> std::string {
 };
 
 static auto send_stop = [](uint32_t port) {
-  void *ctx = zmq_ctx_new();
-  void *socket = zmq_socket(ctx, ZMQ_REQ);
-
-  zmq_connect(socket, get_addr(port, true).c_str());
+  zmq_helper _zmq{get_addr(port, true), zmq_helper::requester};
 
   p2p::p2p_msg req;
   req.set_exit(true);
 
   std::string buf;
   req.SerializeToString(&buf);
-
-  zmq_msg_t msg;
-  zmq_msg_init_size(&msg, buf.size());
-  memcpy(zmq_msg_data(&msg), buf.c_str(), buf.size());
-  zmq_msg_send(&msg, socket, 0);
-
-  zmq_close(socket);
-  zmq_ctx_destroy(ctx);
+  _zmq.send(buf);
 };
 
 void p2p_bind(std::atomic_bool &init_done, cli &shell, uint32_t &port) {
-  void *ctx = zmq_ctx_new();
-  void *socket = zmq_socket(ctx, ZMQ_REP);
-
-  zmq_bind(socket, get_addr(port).c_str());
-
+  zmq_helper _zmq{get_addr(port), zmq_helper::replier};
   bool should_exit{false};
 
   while (true) {
-    zmq_msg_t request;
-    zmq_msg_init(&request);
 
     init_done = true;
     //  Wait for next request from client
-    zmq_msg_recv(&request, socket, 0);
-    std::string rpl = std::string(static_cast<char *>(zmq_msg_data(&request)),
-                                    zmq_msg_size(&request));
+    std::string req;
+    _zmq.recv(req);
 
+    if (req == "STOP") {
+      break;
+    }
 
     p2p::p2p_msg msg;
-    if (msg.ParseFromString(rpl)) {
+    if (msg.ParseFromString(req)) {
       switch (msg.commands_case()) {
         case p2p::p2p_msg::kMsg:
           shell.write_msg(msg.msg().name(), msg.msg().data());
@@ -80,27 +66,17 @@ void p2p_bind(std::atomic_bool &init_done, cli &shell, uint32_t &port) {
       std::cout << "error: bad pb" << std::endl;
     }
 
-    if (rpl == "STOP") {
-      break;
-    }
-
     p2p::p2p_msg r;
 
     r.set_exit(true);
     std::string buffer;
     if (r.SerializeToString(&buffer)) {
-      zmq_msg_t reply;
-      zmq_msg_init_size(&reply, buffer.size());
-      memcpy(zmq_msg_data(&reply), buffer.c_str(), buffer.size());
-      zmq_msg_send(&reply, socket, 0);
+      _zmq.send(buffer);
     }
 
     if (should_exit)
       break;
   }
-
-  zmq_close(socket);
-  zmq_ctx_destroy(ctx);
 }
 
 int main(int ac, char **av) {

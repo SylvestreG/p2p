@@ -2,41 +2,25 @@
 #include <iostream>
 
 central_client::central_client(std::string const& address)
-  : _context{zmq_ctx_new ()}, _socket{zmq_socket(_context, ZMQ_REQ)} {
-  if (zmq_connect(_socket, address.c_str()))
-    throw std::make_error_code(std::errc::connection_refused);
+  : _zmq{address, zmq_helper::requester} {
 }
 
 central_client::~central_client() {
-  zmq_close(_socket);
-  zmq_ctx_destroy(_context);
 }
 
-static void my_free (void *data, void *hint)
-{
-  free(data);
-}
-
-auto encode_send_and_read_response = [](void *sock, central::central_msg& query, central::central_msg &msg) ->  bool {
+auto encode_send_and_read_response = [](zmq_helper &_zmq, central::central_msg& query, central::central_msg &msg) ->  bool {
   std::string output;
   //serialize and send it
   if (query.SerializeToString(&output)) {
-    zmq_msg_t send;
-    zmq_msg_init_size(&send, output.size());
-    memcpy(zmq_msg_data(&send), output.c_str(), output.size());
-    zmq_msg_send(&send, sock, 0);
+    _zmq.send(output);
   } else {
     std::cout << "cannot create client request" << std::endl;
     return false;
   }
 
   //  Get the reply.
-  zmq_msg_t reply;
-  zmq_msg_init(&reply);
-  zmq_msg_recv(&reply, sock, 0);
-
-  std::string
-    rpl = std::string(static_cast<char *>(zmq_msg_data(&reply)), zmq_msg_size(&reply));
+  std::string rpl;
+  _zmq.recv(rpl);
 
   if (!msg.ParseFromString(rpl)) {
     std::cout << "cannot parse response pb" << std::endl;
@@ -60,7 +44,7 @@ bool central_client::client_register(std::string const& name, uint32_t port) {
 
   central::central_msg msg;
 
-  if (!encode_send_and_read_response(_socket, query, msg))
+  if (!encode_send_and_read_response(_zmq, query, msg))
     return false;
 
   if(msg.commands_case() != central::central_msg::kClRegisterRply) {
@@ -88,7 +72,7 @@ bool central_client::client_lookup(
 
   central::central_msg msg;
 
-  if (!encode_send_and_read_response(_socket, query, msg))
+  if (!encode_send_and_read_response(_zmq, query, msg))
     return false;
 
   if(msg.commands_case() != central::central_msg::kClLookupRply) {
@@ -115,7 +99,7 @@ bool central_client::client_unregister(std::string const& name) {
 
   central::central_msg msg;
 
-  if (!encode_send_and_read_response(_socket, query, msg))
+  if (!encode_send_and_read_response(_zmq, query, msg))
     return false;
   if(msg.commands_case() != central::central_msg::kClUnregisterRply) {
     std::cout << "server does not reply a response pb" << std::endl;
@@ -132,5 +116,6 @@ bool central_client::client_unregister(std::string const& name) {
 }
 
 void central_client::stop_server() {
-  zmq_send(_socket, "STOP", 4, 0);
+  std::string stop{"STOP"};
+  _zmq.send(stop);
 }

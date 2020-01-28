@@ -7,6 +7,7 @@
 #include <unordered_map>
 #include "utils.h"
 #include "p2p.pb.h"
+#include "../zmq_helper.h"
 
 std::unordered_map<std::string, std::string> p2p_proxy;
 
@@ -43,15 +44,13 @@ void p2p_send_msg(std::shared_ptr<central_client> client, std::string const& nam
     p2p_proxy[cl_name] = addr;
   }
 
-  void *ctx = zmq_ctx_new();
-  void *sock = zmq_socket(ctx, ZMQ_REQ);
-
-  zmq_connect(sock, p2p_proxy[cl_name].c_str());
 
   if (cl_name == name) {
     std::cout << "send to myself: " << data << std::endl;
     return ;
   }
+
+  zmq_helper _zmq{p2p_proxy[cl_name].c_str(), zmq_helper::requester};
 
   p2p::p2p_msg req;
   p2p::msg_query *mq = new p2p::msg_query;
@@ -61,18 +60,12 @@ void p2p_send_msg(std::shared_ptr<central_client> client, std::string const& nam
 
   std::string buf;
   if (req.SerializeToString(&buf)) {
-    zmq_msg_t msg;
-    zmq_msg_init_size(&msg, buf.length());
-    memcpy(zmq_msg_data(&msg), buf.c_str(), buf.size());
-    zmq_msg_send(&msg, sock, 0);
+    _zmq.send(buf);
 
     //answer is always ok!
-    zmq_msg_t reply;
-    zmq_msg_init(&reply);
-    zmq_msg_recv(&reply, sock, 0);
+    std::string rep;
+    _zmq.recv(rep);
   }
-  zmq_close(sock);
-  zmq_ctx_destroy(ctx);
 }
 
 void clear(replxx::Replxx &rx, std::string const &input) {
