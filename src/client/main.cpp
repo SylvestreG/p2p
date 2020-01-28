@@ -1,14 +1,13 @@
-#include <atomic>
-#include <memory>
-#include <replxx.hxx>
-#include <thread>
-#include <lyra/lyra.hpp>
-#include <spdlog/spdlog.h>
+#include "../zmq_helper.h"
 #include "central_client.h"
 #include "cli.h"
 #include "cli_cmd.h"
 #include "p2p.pb.h"
-#include "../zmq_helper.h"
+#include <lyra/lyra.hpp>
+#include <memory>
+#include <replxx.hxx>
+#include <spdlog/spdlog.h>
+#include <thread>
 
 std::shared_ptr<spdlog::logger> logger;
 
@@ -36,13 +35,11 @@ static auto send_stop = [](uint32_t port) {
   _zmq.send(buf);
 };
 
-void p2p_bind(std::atomic_bool &init_done, cli &shell, uint32_t &port) {
+static void p2p_bind(cli &shell, uint32_t port) {
   zmq_helper _zmq{get_addr(port), zmq_helper::replier};
   bool should_exit{false};
 
   while (true) {
-
-    init_done = true;
     //  Wait for next request from client
     std::string req;
     _zmq.recv(req);
@@ -54,15 +51,15 @@ void p2p_bind(std::atomic_bool &init_done, cli &shell, uint32_t &port) {
     p2p::p2p_msg msg;
     if (msg.ParseFromString(req)) {
       switch (msg.commands_case()) {
-        case p2p::p2p_msg::kMsg:
-          shell.write_msg(msg.msg().name(), msg.msg().data());
-          break;
-        case p2p::p2p_msg::kExit:
-          should_exit = true;
-          break;
-        default:
-          logger->error("request not supported");
-          break;
+      case p2p::p2p_msg::kMsg:
+        shell.write_msg(msg.msg().name(), msg.msg().data());
+        break;
+      case p2p::p2p_msg::kExit:
+        should_exit = true;
+        break;
+      default:
+        logger->error("request not supported");
+        break;
       }
     } else {
       logger->error("bad pbuf");
@@ -87,27 +84,30 @@ int main(int ac, char **av) {
   std::string central;
   uint32_t port{0};
 
+  // Init logger
   logger = spdlog::stdout_color_mt("global");
 
+  // Parse args
   auto arg = lyra::cli_parser() |
-    lyra::opt(name, "name")["-n"]["--name"]("p2p name") |
-    lyra::opt(port, "port")["-p"]["--port"]("p2p port") |
-    lyra::opt(central, "central")["-c"]["--central"]("central addr");
+             lyra::opt(name, "name")["-n"]["--name"]("p2p name") |
+             lyra::opt(port, "port")["-p"]["--port"]("p2p port") |
+             lyra::opt(central, "central")["-c"]["--central"]("central addr");
 
   auto result = arg.parse({ac, av});
   if (!result) {
     logger->error(result.errorMessage());
-    logger->info("usage: ./p2p -n name -p local_binding_port -c tcp://centraladdr:central_port");
+    logger->info("usage: ./p2p -n name -p local_binding_port -c "
+                 "tcp://centraladdr:central_port");
     return EXIT_FAILURE;
   }
 
   if (central.empty() || port == 0 || name.empty()) {
-    logger->info("usage: ./p2p -n name -p local_binding_port -c tcp://centraladdr:central_port");
+    logger->info("usage: ./p2p -n name -p local_binding_port -c "
+                 "tcp://centraladdr:central_port");
     return EXIT_FAILURE;
   }
 
-  std::atomic_bool init_done{false};
-
+  // Connect client to central
   std::shared_ptr<central_client> client;
   try {
     client = std::make_shared<central_client>(central);
@@ -118,12 +118,10 @@ int main(int ac, char **av) {
 
   cli shell;
 
-  std::thread msg_thread{
-      std::bind(p2p_bind, std::ref(init_done), std::ref(shell), std::ref(port))};
+  // Start the binding thread for receiving msgs
+  std::thread msg_thread{std::bind(p2p_bind, std::ref(shell), port)};
 
-  while (!init_done)
-    std::this_thread::sleep_for(std::chrono::milliseconds{5});
-
+  // Register to central
   if (!client->client_register(name, port)) {
     send_stop(port);
     msg_thread.join();
@@ -131,6 +129,7 @@ int main(int ac, char **av) {
     return EXIT_FAILURE;
   }
 
+  // Register commands to ui
   shell.add_command("clear", clear);
   shell.add_command("history", history);
   shell.add_command("help", help);
@@ -138,8 +137,10 @@ int main(int ac, char **av) {
                     std::bind(p2p_send_msg, client, name, std::placeholders::_1,
                               std::placeholders::_2));
 
+  // Launch shell
   shell.run();
 
+  // On exit free ressources
   client->client_unregister(name);
   send_stop(port);
   msg_thread.join();

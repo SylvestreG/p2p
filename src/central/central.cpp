@@ -13,8 +13,8 @@ central_server::central_server(std::string const &addr)
 
 central_server::~central_server() {}
 
-auto handle_response = [](std::string &err, auto &response,
-                          auto &msg) -> std::string {
+static auto handle_response = [](std::string &err, auto &response,
+                                 auto &msg) -> std::string {
   if (err.empty()) {
     response->set_success(true);
     logger->info("success");

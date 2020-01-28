@@ -8,9 +8,9 @@ central_client::central_client(std::string const &address)
 
 central_client::~central_client() {}
 
-auto encode_send_and_read_response = [](zmq_helper &_zmq,
-                                        central::central_msg &query,
-                                        central::central_msg &msg) -> bool {
+static auto encode_send_and_read_response =
+    [](zmq_helper &_zmq, central::central_msg &query,
+       central::central_msg &msg) -> bool {
   std::string output;
   // serialize and send it
   if (query.SerializeToString(&output)) {
@@ -108,7 +108,7 @@ bool central_client::client_unregister(std::string const &name) {
 
   if (!msg.cl_unregister_rply().success()) {
     logger->error("server error on register: {}",
-               msg.cl_unregister_rply().error_message());
+                  msg.cl_unregister_rply().error_message());
     return false;
   }
 
