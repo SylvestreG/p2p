@@ -78,3 +78,19 @@ TEST_F(central_test, lookup) {
   ASSERT_TRUE(cli3.client_lookup("3", output));
   ASSERT_EQ(output, "tcp://127.0.0.1:3234");
 }
+
+TEST_F(central_test, unregister) {
+  central_client cli1{server_addr};
+  central_client cli2{server_addr};
+  central_client cli3{server_addr};
+
+  ASSERT_TRUE(cli1.client_register("1", 3232));
+  ASSERT_TRUE(cli2.client_register("2", 3233));
+  ASSERT_TRUE(cli3.client_register("3", 3234));
+
+  std::string output;
+  ASSERT_FALSE(cli1.client_unregister("4"));
+  ASSERT_TRUE(cli1.client_unregister("3"));
+  ASSERT_TRUE(cli1.client_unregister("2"));
+  ASSERT_TRUE(cli1.client_unregister("1"));
+}
