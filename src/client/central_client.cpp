@@ -1,20 +1,22 @@
 #include "central_client.h"
-#include <iostream>
+#include <spdlog/spdlog.h>
 
-central_client::central_client(std::string const& address)
-  : _zmq{address, zmq_helper::requester} {
-}
+extern std::shared_ptr<spdlog::logger> logger;
 
-central_client::~central_client() {
-}
+central_client::central_client(std::string const &address)
+    : _zmq{address, zmq_helper::requester} {}
 
-auto encode_send_and_read_response = [](zmq_helper &_zmq, central::central_msg& query, central::central_msg &msg) ->  bool {
+central_client::~central_client() {}
+
+auto encode_send_and_read_response = [](zmq_helper &_zmq,
+                                        central::central_msg &query,
+                                        central::central_msg &msg) -> bool {
   std::string output;
-  //serialize and send it
+  // serialize and send it
   if (query.SerializeToString(&output)) {
     _zmq.send(output);
   } else {
-    std::cout << "cannot create client request" << std::endl;
+    logger->error("cannot create client request");
     return false;
   }
 
@@ -23,15 +25,15 @@ auto encode_send_and_read_response = [](zmq_helper &_zmq, central::central_msg& 
   _zmq.recv(rpl);
 
   if (!msg.ParseFromString(rpl)) {
-    std::cout << "cannot parse response pb" << std::endl;
+    logger->error("cannot parse response pb");
     return false;
   }
 
   return true;
 };
 
-bool central_client::client_register(std::string const& name, uint32_t port) {
-  //build register request
+bool central_client::client_register(std::string const &name, uint32_t port) {
+  // build register request
   central::central_msg query;
   central::client_id *id(new central::client_id());
   central::client_information *infos(new central::client_information());
@@ -47,23 +49,21 @@ bool central_client::client_register(std::string const& name, uint32_t port) {
   if (!encode_send_and_read_response(_zmq, query, msg))
     return false;
 
-  if(msg.commands_case() != central::central_msg::kClRegisterRply) {
-    std::cout << "server does not reply a response pb" << std::endl;
+  if (msg.commands_case() != central::central_msg::kClRegisterRply) {
+    logger->error("server does not reply a response pb");
     return false;
   }
 
   if (!msg.cl_register_rply().success()) {
-    std::cout << "server error on register: "
-              << msg.cl_register_rply().error_message() << std::endl;
+    logger->error("server error on register: {}",
+                  msg.cl_register_rply().error_message());
     return false;
   }
 
   return true;
 }
 
-bool central_client::client_lookup(
-  std::string const& name,
-  std::string& addr) {
+bool central_client::client_lookup(std::string const &name, std::string &addr) {
   central::central_msg query;
   central::client_id *id = new central::client_id;
 
@@ -75,14 +75,14 @@ bool central_client::client_lookup(
   if (!encode_send_and_read_response(_zmq, query, msg))
     return false;
 
-  if(msg.commands_case() != central::central_msg::kClLookupRply) {
-    std::cout << "server does not reply a response pb" << std::endl;
+  if (msg.commands_case() != central::central_msg::kClLookupRply) {
+    logger->error("server does not reply a response pb");
     return false;
   }
 
   if (!msg.cl_lookup_rply().response().success()) {
-    std::cout << "server error on lookup: "
-              << msg.cl_lookup_rply().response().error_message() << std::endl;
+    logger->error("server error on lookup: {}",
+                  msg.cl_lookup_rply().response().error_message());
     return false;
   }
 
@@ -90,7 +90,7 @@ bool central_client::client_lookup(
   return true;
 }
 
-bool central_client::client_unregister(std::string const& name) {
+bool central_client::client_unregister(std::string const &name) {
   central::central_msg query;
   central::client_id *id = new central::client_id;
 
@@ -101,14 +101,14 @@ bool central_client::client_unregister(std::string const& name) {
 
   if (!encode_send_and_read_response(_zmq, query, msg))
     return false;
-  if(msg.commands_case() != central::central_msg::kClUnregisterRply) {
-    std::cout << "server does not reply a response pb" << std::endl;
+  if (msg.commands_case() != central::central_msg::kClUnregisterRply) {
+    logger->error("server does not reply a response pb");
     return false;
   }
 
   if (!msg.cl_unregister_rply().success()) {
-    std::cout << "server error on register: "
-              << msg.cl_unregister_rply().error_message() << std::endl;
+    logger->error("server error on register: {}",
+               msg.cl_unregister_rply().error_message());
     return false;
   }
 

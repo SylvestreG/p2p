@@ -1,14 +1,16 @@
 #include <atomic>
-#include <iostream>
 #include <memory>
 #include <replxx.hxx>
 #include <thread>
 #include <lyra/lyra.hpp>
+#include <spdlog/spdlog.h>
 #include "central_client.h"
 #include "cli.h"
 #include "cli_cmd.h"
 #include "p2p.pb.h"
 #include "../zmq_helper.h"
+
+std::shared_ptr<spdlog::logger> logger;
 
 using Replxx = replxx::Replxx;
 
@@ -59,11 +61,11 @@ void p2p_bind(std::atomic_bool &init_done, cli &shell, uint32_t &port) {
           should_exit = true;
           break;
         default:
-          std::cout << "error: not supported request" << std::endl;
+          logger->error("request not supported");
           break;
       }
     } else {
-      std::cout << "error: bad pb" << std::endl;
+      logger->error("bad pbuf");
     }
 
     p2p::p2p_msg r;
@@ -85,6 +87,8 @@ int main(int ac, char **av) {
   std::string central;
   uint32_t port{0};
 
+  logger = spdlog::stdout_color_mt("global");
+
   auto arg = lyra::cli_parser() |
     lyra::opt(name, "name")["-n"]["--name"]("p2p name") |
     lyra::opt(port, "port")["-p"]["--port"]("p2p port") |
@@ -92,14 +96,13 @@ int main(int ac, char **av) {
 
   auto result = arg.parse({ac, av});
   if (!result) {
-    std::cerr <<  "error: " << result.errorMessage()
-              << std::endl;
-    std::cerr << "usage: ./p2p -n name -p local_binding_port -c tcp://centraladdr:central_port" << std::endl;
+    logger->error(result.errorMessage());
+    logger->info("usage: ./p2p -n name -p local_binding_port -c tcp://centraladdr:central_port");
     return EXIT_FAILURE;
   }
 
   if (central.empty() || port == 0 || name.empty()) {
-    std::cerr << "usage: ./p2p -n name -p local_binding_port -c tcp://centraladdr:central_port" << std::endl;
+    logger->info("usage: ./p2p -n name -p local_binding_port -c tcp://centraladdr:central_port");
     return EXIT_FAILURE;
   }
 
@@ -109,8 +112,7 @@ int main(int ac, char **av) {
   try {
     client = std::make_shared<central_client>(central);
   } catch (std::error_code const &ec) {
-    std::cerr << "\x1b[1;32merror\x1b[0m"
-              << ": cannot access to central" << std::endl;
+    logger->error("cannot access central");
     return EXIT_FAILURE;
   }
 
@@ -125,7 +127,7 @@ int main(int ac, char **av) {
   if (!client->client_register(name, port)) {
     send_stop(port);
     msg_thread.join();
-    std::cout << "\x1b[1;32merror\x1b[0m cannot register client" << std::endl;
+    logger->error("cannot register client");
     return EXIT_FAILURE;
   }
 

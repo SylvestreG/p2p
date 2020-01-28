@@ -5,8 +5,11 @@
 #include "cli.h"
 #include <cstring>
 #include <iostream>
+#include <spdlog/spdlog.h>
 
 using namespace replxx;
+
+extern std::shared_ptr<spdlog::logger> logger;
 
 cli::cli() : _history_file{".p2p-history"}, _prompt{"\x1b[1;32mp2p\x1b[0m> "} {
   _rx.install_window_change_handler();
@@ -92,7 +95,7 @@ static auto hook_completion =
 };
 
 void cli::write_msg(std::string const& src, std::string const& msg) {
-  std::cout << std::endl << src << " send us: " << msg << std::endl;
+  logger->info("\n{0} send us : {1}", src, msg);
   std::cout << _prompt << std::flush;
 }
 

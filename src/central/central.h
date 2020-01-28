@@ -5,8 +5,6 @@
 #ifndef P2P_CENTRAL_IFACE_H_
 #define P2P_CENTRAL_IFACE_H_
 
-#include <iostream>
-#include <memory>
 #include <string>
 #include <unordered_map>
 #include "central.pb.h"

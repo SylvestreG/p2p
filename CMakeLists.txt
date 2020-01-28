@@ -5,6 +5,17 @@ set(CMAKE_CXX_STANDARD 17)
 
 include(ExternalProject)
 
+ExternalProject_Add(spdlog_lib
+  GIT_REPOSITORY https://github.com/gabime/spdlog/
+  TIMEOUT 10
+  CONFIGURE_COMMAND ""
+  BUILD_COMMAND ""
+  INSTALL_COMMAND ""
+  LOG_DOWNLOAD ON)
+add_definitions("-DSPDLOG_ENABLE_SYSLOG")
+ExternalProject_Get_Property(spdlog_lib source_dir)
+include_directories(${source_dir}/include)
+
 ExternalProject_Add(lyra-lib
   GIT_REPOSITORY https://github.com/bfgroup/lyra
   TIMEOUT 10
@@ -48,7 +59,7 @@ add_executable(central  src/central/central.cpp
                         src/central/main.cpp
                         src/zmq_helper.cpp
                         ${CENTRAL_SRCS} ${CENTRAL_HDRS})
-add_dependencies(central lyra-lib)
+add_dependencies(central lyra-lib spdlog_lib)
 target_link_libraries(central ${Protobuf_LIBRARIES} zmq)
 
 add_executable(p2p      src/client/main.cpp
@@ -61,9 +72,8 @@ add_executable(p2p      src/client/main.cpp
                         ${CENTRAL_HDRS}
                         ${P2P_SRCS}
                         ${P2O_HDRS})
-add_dependencies(p2p replxx_lib lyra-lib)
+add_dependencies(p2p replxx_lib lyra-lib spdlog_lib)
 target_link_libraries(p2p replxx ${Protobuf_LIBRARIES} zmq)
-
 
 option(WITH_TESTING "Generate unit tests." OFF)
 add_subdirectory(tests)

@@ -2,14 +2,15 @@
 // Created by syl on 1/27/20.
 //
 #include "cli_cmd.h"
-#include <iomanip>
-#include <iostream>
 #include <unordered_map>
+#include <spdlog/spdlog.h>
 #include "utils.h"
 #include "p2p.pb.h"
 #include "../zmq_helper.h"
 
-std::unordered_map<std::string, std::string> p2p_proxy;
+extern std::shared_ptr<spdlog::logger> logger;
+
+static std::unordered_map<std::string, std::string> p2p_proxy;
 
 void p2p_send_msg(std::shared_ptr<central_client> client, std::string const& name,
   replxx::Replxx &rx, std::string const &input) {
@@ -20,8 +21,7 @@ void p2p_send_msg(std::shared_ptr<central_client> client, std::string const& nam
 
   // we need at least 3 words : send addr data
   if (words.size() < 3) {
-    std::cout << "error: bad format for msg\n\tusage: msg addr data"
-              << std::endl;
+    logger->error("bad format for msg\n\tusage: msg addr data");
     return;
   }
 
@@ -35,9 +35,10 @@ void p2p_send_msg(std::shared_ptr<central_client> client, std::string const& nam
 
   std::string addr;
   if (p2p_proxy.find(cl_name) == p2p_proxy.end() && cl_name != name) {
-    std::cout << "unknown p2p client : '" << cl_name << "' asking central" << std::endl;
+    logger->info("unknown p2p client : '{}' asking central", cl_name);
+
     if (!client->client_lookup(cl_name, addr)) {
-      std::cout << "error no '" << cl_name << "' registred" << std::endl;
+      logger->error("no {} registred", cl_name);
       return ;
     }
 
@@ -46,7 +47,7 @@ void p2p_send_msg(std::shared_ptr<central_client> client, std::string const& nam
 
 
   if (cl_name == name) {
-    std::cout << "send to myself: " << data << std::endl;
+    logger->info("send to myself: {}", data);
     return ;
   }
 
@@ -75,14 +76,14 @@ void clear(replxx::Replxx &rx, std::string const &input) {
 void history(replxx::Replxx &rx, std::string const &input) {
   replxx::Replxx::HistoryScan hs(rx.history_scan());
   for (int i(0); hs.next(); ++i) {
-    std::cout << std::setw(4) << i << ": " << hs.get().text() << "\n";
+    logger->info("{0} : {1}", i, hs.get().text());
   }
 }
 void help(replxx::Replxx &rx, std::string const &input) {
-  std::cout << "help\n\tdisplays the help output\n"
-            << "quit\n\texit the repl\n"
-            << "exit\n\texit the repl\n"
-            << "clear\n\tclears the screen\n"
-            << "history\n\tdisplays the history output\n"
-            << "send peername msg\n\tsend msg to peername" << std::endl;
+  logger->info("\nhelp\n\tdisplays the help output\n"
+               "quit\n\texit the repl\n"
+               "exit\n\texit the repl\n"
+               "clear\n\tclears the screen\n"
+               "history\n\tdisplays the history output\n"
+               "send peername msg\n\tsend msg to peername");
 }
